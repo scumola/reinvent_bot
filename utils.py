@@ -1,50 +1,47 @@
 from config import *
 
-import boto3
 import twitter
+import pickledb
+
+db = pickledb.load('session.db', True)
 
 class ReinventBot():
     def __init__(self):
-        self.dynamodb = boto3.client('dynamodb', region_name='us-east-2')
-        self.table_name = SESSION_TABLE
-        self.logging_table_name = LOGGING_TABLE
-        self.api = self._connect_to_twitter()
+        global db
 
     def check_if_new(self, session_number):
-        if (self._get_stored_session(session_number) == 1):
-            # If there is no session stored in DB with the same ID, return True, this is a new session
-            return True  
+        global db
+        if (db.exists("id."+session_number)):
+            return False  
         else:
-            # If there is a match in the DB with the same ID, return False, this is not new
-            return False
+            return True
 
     def check_if_updated(self, session_number, new_session_info):
+        global db
         is_updated = False
         what_changed = ''
-        response = self._get_stored_session(session_number)
-        if (response != 1):
-            session_number = response['Items'][0]['session_number']['S']
-            if (session_number == new_session_info['session_number']):
-                version = response['Items'][0]['version']['N']
-                session_title = response['Items'][0]['session_title']['S']
-                start_time = response['Items'][0]['start_time']['S']
-                if start_time != new_session_info['start_time']:
-                    is_updated = True
-                    what_changed = what_changed + "Start Time, "
-                else:
-                    is_updated = False
-                end_time = response['Items'][0]['end_time']['S']
-                if end_time != new_session_info['end_time']:
-                    is_updated = True
-                    what_changed = what_changed + "End Time, "
-                else:
-                    is_updated = False
-                room_building = response['Items'][0]['room_building']['S']
-                if room_building != new_session_info['room_building']:
-                    is_updated = True
-                    what_changed = what_changed + "Room or Building, "
-                else:
-                    is_updated = False
+        session_number = session_number
+        if (session_number == new_session_info['session_number']):
+            version = db.get("version."+session_number)
+            session_title = db.get("title."+session_number)
+            start_time = db.get("starttime."+session_number)
+            if start_time != new_session_info['start_time']:
+                is_updated = True
+                what_changed = what_changed + "Start Time, "
+            else:
+                is_updated = False
+            end_time = db.get("endtime."+session_number)
+            if end_time != new_session_info['end_time']:
+                is_updated = True
+                what_changed = what_changed + "End Time, "
+            else:
+                is_updated = False
+            room_building = db.get("room."+session_number)
+            if room_building != new_session_info['room_building']:
+                is_updated = True
+                what_changed = what_changed + "Room or Building, "
+            else:
+                is_updated = False
 
         if (is_updated):
             what_changed = what_changed[:-2]
@@ -71,46 +68,17 @@ class ReinventBot():
             return 1
 
     def store_session(self, session_info):
-        response = self.dynamodb.put_item(
-            Item={
-                "session_number": {
-                    'S': session_info['session_number']
-                },
-                "version": {
-                    'N': session_info['version']
-                },
-                "session_title": {
-                    'S': session_info['session_title']
-                },
-                "start_time": {
-                    'S': session_info['start_time']
-                },
-                "end_time": {
-                    'S': session_info['end_time']
-                },
-                "room_building": {
-                    'S': session_info['room_building']
-                }
-            },
-            TableName=self.table_name)
+        global db
+        db.set("id."+session_info['session_number'],1)
+        db.set("version."+session_info['session_number'],session_info['version'])
+        db.set("title."+session_info['session_number'],session_info['session_title'])
+        db.set("starttime."+session_info['session_number'],session_info['start_time'])
+        db.set("endtime."+session_info['session_number'],session_info['end_time'])
+        db.set("room."+session_info['session_number'],session_info['room_building'])
+        db.set("abstract."+session_info['session_number'],session_info['abstract'])
 
     def log_execution(self, topic_id, execution_timestamp, status, duration):
-        response = self.dynamodb.put_item(
-            Item={
-                "topic_id": {
-                    'S': topic_id
-                },
-                "execution_timestamp": {
-                    'S': execution_timestamp
-                },
-                "status": {
-                    'S': status
-                },
-                "duration": {
-                    'S': duration
-                }
-            },
-            TableName=self.logging_table_name)
+        pass
 
     def _connect_to_twitter(self):
         api = twitter.Api(

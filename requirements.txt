@@ -1,5 +1,6 @@
-boto3
 bs4
+discord_webhook
+pickledb
 python-twitter
 requests
 selenium

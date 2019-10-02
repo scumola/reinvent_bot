@@ -12,3 +12,7 @@ PASSWORD = 'REINVENT_PORTAL_PASSWORD'
 # DynamoDB Tables
 LOGGING_TABLE = 'DYNAMODB_LOGGING_TABLE_NAME'
 SESSION_TABLE = 'DYNAMODB_SESSION_TABLE_NAME'
+
+# Discord Webhook
+DISCORD_WEBHOOK_URL = 'https://discordapp.com/api/webhooks/xxxxxxxx'
+

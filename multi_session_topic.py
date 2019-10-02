@@ -1,3 +1,4 @@
+#!/usr/bin/python
 ############################################################################################
 #### AWS re:Invent - Session Information Downloader & Twitter Bot
 # Provides a quick dirty way to export AWS re:Invent session content from the event website.
@@ -29,9 +30,14 @@ import json
 import os
 import re
 import requests
+from discord_webhook import DiscordWebhook, DiscordEmbed
+
+
+# create embed object for webhook
 
 BOT_MODE = True
-TWEET = True
+TWEET = False
+DISCORD = True
 
 # Chrome web driver path - only required if not in PATH
 # CHROME_DRIVER = './chromedriver.exe'
@@ -51,7 +57,7 @@ soup = BeautifulSoup(r.text, "html.parser")
 
 topic_ids = []
 
-topics = soup.find("div", id="profileItem_10240_tr")
+topics = soup.find("div", id="profileItem_19577_tr")
 topics = topics.find("div", class_="formContent")
 topics = topics.find_all("input")
 for t in topics:
@@ -203,7 +209,16 @@ for session in sessions:
     session_number = session_soup.find("span", class_="abbreviation")
     session_number = session_number.string.replace(" - ", "")
 
+    session_tag = session_number.split('-',1)[0]
+
     session_abstract = session_soup.find("span", class_="abstract")
+    if session_abstract is not None:
+        newsoup = BeautifulSoup(str(session_abstract), 'html.parser')
+        session_abstract = newsoup.get_text()
+        session_abstract = str(unidecode(session_abstract))
+        session_abstract = session_abstract.replace(" View More", "")
+    else:
+        session_abstract = ""
 
     # Print the session Number and Title
     print("{!s}: {!s}".format(session_number, session_title))
@@ -216,6 +231,7 @@ for session in sessions:
         # I have no way to verify if the session is updated. Exit the loop
         # and continue onwards.
         if (new == False and session_timing['start_time'] == "FALSE"):
+            print ("*** Thinks no session time ***")
             continue
 
         session_info = {
@@ -223,10 +239,11 @@ for session in sessions:
             "session_title": session_title,
             "start_time": str(session_timing['start_time']),
             "end_time": str(session_timing['end_time']),
+            "abstract": str(session_abstract),
             "room_building": str(session_timing['room'])
         }
 
-        session_url = "https://www.portal.reinvent.awsevents.com/connect/search.ww#loadSearch-searchPhrase="+str(session_number)+"&searchType=session&tc=0&sortBy=abbreviationSort&p="
+        session_url = "https://www.portal.reinvent.awsevents.com/connect/search.ww#loadSearch-searchPhrase="+str(session_tag)+"&searchType=session&tc=0&sortBy=abbreviationSort&p="
 
         if (new == True):
             if ("embargo" not in session_title):
@@ -238,6 +255,12 @@ for session in sessions:
                     print(tweet)
                     status = bot.send_tweet(tweet)
                     print(status)
+                if DISCORD:
+                    webhook = DiscordWebhook(url=DISCORD_WEBHOOK_URL)
+                    embed = DiscordEmbed(title="NEW: {!s} {!s}".format(session_info['session_number'],session_info['session_title']), description=str(session_abstract)+'\nhttps://www.portal.reinvent.awsevents.com/connect/search.ww#loadSearch-searchPhrase='+str(session_tag)+'&searchType=session&tc=0&sortBy=abbreviationSort&p=', color=242424)
+                    embed.set_timestamp()
+                    webhook.add_embed(embed)
+                    webhook.execute()
         else:
             update, what_changed = bot.check_if_updated(str(session_number), session_info)
             if (update != False):
@@ -251,6 +274,12 @@ for session in sessions:
                     print(tweet)
                     status = bot.send_tweet(tweet)
                     print(status)
+                if DISCORD:
+                    webhook = DiscordWebhook(url=DISCORD_WEBHOOK_URL)
+                    embed = DiscordEmbed(title="UPDATED: {!s} for session: {!s} {!s}".format(what_changed, session_info['session_number'],session_info['session_title']), description=str(session_abstract)+'\nhttps://www.portal.reinvent.awsevents.com/connect/search.ww#loadSearch-searchPhrase='+str(session_number)+'&searchType=session&tc=0&sortBy=abbreviationSort&p=', color=242424)
+                    embed.set_timestamp()
+                    webhook.add_embed(embed)
+                    webhook.execute()
 
     # If we're not in BOT mode, we should write to a file.
     elif not BOT_MODE:
