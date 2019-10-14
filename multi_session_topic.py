@@ -51,7 +51,11 @@ bot = ReinventBot() if BOT_MODE else ""
 
 # In order to actually get all of the sessions, we need to use the filters
 # Which return the viewest sessions with each request. The topic filter provides this.
-r = requests.get("https://www.portal.reinvent.awsevents.com/connect/search.ww")
+headers = {
+    'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 10_3 like Mac OS X) AppleWebKit/602.1.50 (KHTML, like Gecko) CriOS/56.0.2924.75 Mobile/14E5239e Safari/602.1',
+    'From': 'bigwebb@gmail.com'  # This is another valid field
+}
+r = requests.get("https://www.portal.reinvent.awsevents.com/connect/search.ww",headers=headers)
 
 soup = BeautifulSoup(r.text, "html.parser")
 
@@ -67,6 +71,7 @@ for t in topics:
 chrome_options = Options()
 chrome_options.add_argument("--headless")
 chrome_options.add_argument("--no-sandbox")
+chrome_options.add_argument("user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36")
 content_to_parse = ''
 
 driver = webdriver.Chrome(chrome_options=chrome_options)
@@ -105,7 +110,11 @@ def get_session_time(session_id):
         "page": "%2Fconnect%2Fsearch.ww",
         "scriptSessionId": "aa$GdZcE0UHnrOn2rs*Baug1rnm/JuuLapm-fcKKw5gVn"
     }
-    headers = {'Content-Type': 'text/plain'}
+    headers = {
+        'Content-Type': 'text/plain',
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 10_3 like Mac OS X) AppleWebKit/602.1.50 (KHTML, like Gecko) CriOS/56.0.2924.75 Mobile/14E5239e Safari/602.1',
+        'From': 'bigwebb@gmail.com'
+    }
     r = requests.post(url, headers=headers, data=data, verify=REQ_VERIFY)
     returned = r.content
     returned = returned.decode('utf-8').replace("\\", '')
@@ -257,8 +266,8 @@ for session in sessions:
                     print(status)
                 if DISCORD:
                     webhook = DiscordWebhook(url=DISCORD_WEBHOOK_URL)
-                    embed = DiscordEmbed(title="NEW: {!s} {!s}".format(session_info['session_number'],session_info['session_title']), description=str(session_abstract)+'\nhttps://www.portal.reinvent.awsevents.com/connect/search.ww#loadSearch-searchPhrase='+str(session_tag)+'&searchType=session&tc=0&sortBy=abbreviationSort&p=', color=242424)
-                    embed.set_timestamp()
+                    embed = DiscordEmbed(title="NEW: {!s} - {!s}".format(session_info['session_number'],session_info['session_title']), description='Room: '+str(session_info['room_building'])+'\n'+'Start: '+str(session_info['start_time'])+'\n'+str(session_abstract)+'\nhttps://www.portal.reinvent.awsevents.com/connect/search.ww#loadSearch-searchPhrase='+str(session_tag)+'&searchType=session&tc=0&sortBy=abbreviationSort&p=', color=242424)
+#                    embed.set_timestamp()
                     webhook.add_embed(embed)
                     webhook.execute()
         else:
@@ -276,8 +285,8 @@ for session in sessions:
                     print(status)
                 if DISCORD:
                     webhook = DiscordWebhook(url=DISCORD_WEBHOOK_URL)
-                    embed = DiscordEmbed(title="UPDATED: {!s} for session: {!s} {!s}".format(what_changed, session_info['session_number'],session_info['session_title']), description=str(session_abstract)+'\nhttps://www.portal.reinvent.awsevents.com/connect/search.ww#loadSearch-searchPhrase='+str(session_number)+'&searchType=session&tc=0&sortBy=abbreviationSort&p=', color=242424)
-                    embed.set_timestamp()
+                    embed = DiscordEmbed(title="UPDATED: {!s} for session: {!s} - {!s}".format(what_changed, session_info['session_number'],session_info['session_title']), description='Room: '+str(session_info['room_building'])+'\n'+'Start: '+str(session_info['start_time'])+'\n'+str(session_abstract)+'\nhttps://www.portal.reinvent.awsevents.com/connect/search.ww#loadSearch-searchPhrase='+str(session_number)+'&searchType=session&tc=0&sortBy=abbreviationSort&p=', color=242424)
+#                    embed.set_timestamp()
                     webhook.add_embed(embed)
                     webhook.execute()
 
