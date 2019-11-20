@@ -11,8 +11,10 @@
 # 2. Download the Chrome web driver (https://sites.google.com/a/chromium.org/chromedriver/downloads).
 # 3. Unzip the Chrome webdriver binary into a folder that exists in your PATH.
 #
-# @author Matt Adorjan
-# @email matt.adorjan@gmail.com
+# @author Steve Webb
+# @email bigwebb@gmail.com
+# @original_author Matt Adorjan
+# @original_email matt.adorjan@gmail.com
 ############################################################################################
 
 from bs4 import BeautifulSoup
